@@ -1,4 +1,4 @@
-function [L,s2,sd] = nsamdf_nonlinear_measure(data,fs,winlen,shiftlen,lag,degree,doPlot)
+function out = nsamdf_nonlinear_measure(data,fs,winLenRel,shiftLenRel,lagRel,degree,doPlot)
 % nsamdf_nonlinear_measure computes the nonlinearity measure L through nsAMDF
 % (nonlinear average magnitude difference function), developed by:
 %
@@ -51,14 +51,17 @@ if nargin < 2
     fs = 1;
 end
 if nargin < 3
-    winlen = 14*fs;
+    winLenRel = 14;
 end
+windowLength = winLenRel*fs;
 if nargin < 4
-    shiftlen = 0.5*winlen;
+    shiftLenRel = 0.5;
 end
+shiftLength = shiftLenRel*windowLength;
 if nargin < 5
-    lag = fs;
+    lagRel = 1;
 end
+lag = fs*lagRel;
 if nargin < 6
     degree = 7;
 end
@@ -66,23 +69,26 @@ if nargin < 7
     doPlot = false
 end
 
+%-------------------------------------------------------------------------------
+% nsAMDF for p=2:
+s2 = NormedSingleCurveLengthWindowed(data,windowLength,shiftLength,lag,fs,2);
+out.s2 = s2 ./ max(s2); % normalized
+
+% nsAMDF for p=degree:
+sd = NormedSingleCurveLengthWindowed(data,windowLength,shiftLength,lag,fs,degree);
+out.sd = sd ./ max(sd); % normalized
+
+% If you like, you can bandpass filter s2 and sd for the specific frequency band
+% of nonlinear effect both to compute L and plot them as such
+
+out.L = norm(s2 - sd);
 
 %-------------------------------------------------------------------------------
-s2 = NormedSingleCurveLengthWindowed(data,winlen,shiftlen,lag,fs,2); % nsAMDF for p=2
-s2 = s2 ./ max(s2); % normalized
-
-sd = NormedSingleCurveLengthWindowed(data,winlen,shiftlen,lag,fs,degree); % nsAMDF for p=degree
-sd = sd ./ max(sd); % normalized
-
-% if you like, you can bandpass filter s2 and sd for the specific frequency band of nonlinear effect
-% both to compute L and plot them as such
-
-L = norm(s2 - sd);
-
-
 if doPlot
     figure
     plot(s2,'b')
     hold on
     plot(sd,'g')
+end
+
 end
